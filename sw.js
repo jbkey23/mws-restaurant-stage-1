@@ -5,6 +5,7 @@ const staticCacheName = 'restaurant-reviews-static-v1'
  */
 self.addEventListener('install', (event) => {
     const assets = [
+        '/',
         'data/restaurants.json',
         'css/styles.css',
         'js/dbhelper.js',
@@ -37,8 +38,20 @@ self.addEventListener('install', (event) => {
  */
 self.addEventListener('fetch', (event) => {
     event.respondWith(
-        caches.match(event.request).then(function(response) {
-          return response || fetch(event.request);
-        })
-      );
+      caches.open(staticCacheName).then(function(cache) {
+        return cache.match(event.request).then(function(response) {
+          if (response) return response;
+    
+          return fetch(event.request).then(function(networkResponse) {
+            const urlFromOrigin = event.request.url.startsWith(`${location.origin}`);
+
+            if(urlFromOrigin) {
+              cache.put(event.request, networkResponse.clone());
+            }
+          
+            return networkResponse;
+          });
+        });
+      })
+    );
 });

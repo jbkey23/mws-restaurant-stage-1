@@ -82,6 +82,11 @@ nav h1 a {
   text-transform: uppercase;
 }
 
+.breadcrumb {
+  background-color: transparent;
+  text-align: left;
+}
+
 #breadcrumb {
     padding: 10px 20px 16px;
     list-style: none;
@@ -314,7 +319,7 @@ nav h1 a {
   width: 50%;
 }
 
-#reviews-container h2 {
+#reviews-container h3{
   color: #f58500;
   font-size: 24pt;
   font-weight: 300;
