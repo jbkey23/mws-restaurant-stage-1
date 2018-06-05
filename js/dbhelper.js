@@ -11,10 +11,13 @@ class DBHelper {
     }
   
     return idb.open('restaturant-reviews', 1, function(upgradeDb) {
-      var store = upgradeDb.createObjectStore('restaurants', {
-        keyPath: 'id'
-      });
-      store.createIndex('by-id', 'id');
+      switch(upgradeDb.oldVersion) {
+        case 0:
+          const store = upgradeDb.createObjectStore('restaurants', {
+            keyPath: 'id'
+          });
+          store.createIndex('by-id', 'id');
+      }
     });
   }
 
