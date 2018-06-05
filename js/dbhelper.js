@@ -3,32 +3,60 @@
  */
 class DBHelper {
 
+  static get DB_PROMISE() {
+    // If the browser doesn't support service worker,
+    // we don't care about having a database
+    if (!navigator.serviceWorker) {
+      return Promise.resolve();
+    }
+  
+    return idb.open('restaturant-reviews', 1, function(upgradeDb) {
+      var store = upgradeDb.createObjectStore('restaurants', {
+        keyPath: 'id'
+      });
+      store.createIndex('by-id', 'id');
+    });
+  }
+
   /**
    * Database URL.
    * Change this to restaurants.json file location on your server.
    */
   static get DATABASE_URL() {
-    const port = 8000 // Change this to your server port
-    return `http://localhost:${port}/data/restaurants.json`;
+    const port = 1337 // Change this to your server port
+    return `http://localhost:${port}/restaurants`;
   }
 
   /**
    * Fetch all restaurants.
    */
   static fetchRestaurants(callback) {
-    let xhr = new XMLHttpRequest();
-    xhr.open('GET', DBHelper.DATABASE_URL);
-    xhr.onload = () => {
-      if (xhr.status === 200) { // Got a success response from server!
-        const json = JSON.parse(xhr.responseText);
-        const restaurants = json.restaurants;
-        callback(null, restaurants);
-      } else { // Oops!. Got an error from server.
-        const error = (`Request failed. Returned status of ${xhr.status}`);
-        callback(error, null);
-      }
-    };
-    xhr.send();
+
+    fetch(DBHelper.DATABASE_URL)
+    .then(data => data.json())
+    .then(restaurants => {
+      DBHelper.DB_PROMISE.then(db => {
+        const tx = db.transaction('restaurants', 'readwrite');
+        const restaurantStore = tx.objectStore('restaurants');
+
+        restaurants.forEach(restaurant => {
+          restaurantStore.put(restaurant);
+        });
+      });
+
+      callback(null, restaurants)
+    })
+    .catch(error => {
+      DBHelper.DB_PROMISE.then(db => {
+        const tx = db.transaction('restaurants');
+        const restaurantStore = tx.objectStore('restaurants');
+        restaurantStore.getAll().then(restaurants => {
+          callback(null, restaurants);
+        })
+      })
+      .catch(error => callback(error, null));
+    });
+
   }
 
   /**
@@ -150,7 +178,7 @@ class DBHelper {
    * Restaurant image URL.
    */
   static imageUrlForRestaurant(restaurant) {
-    return (`/img/${restaurant.photograph}`);
+    return (`/img/${restaurant.photograph}.jpg`);
   }
 
   /**
