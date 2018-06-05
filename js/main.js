@@ -13,6 +13,34 @@ document.addEventListener('DOMContentLoaded', (event) => {
 });
 
 /**
+ * Add intersection observers to lazy load restaurant images
+ */
+const config = {
+  rootMargin: '0px',
+  threshold: 0.3
+};
+
+let imageObserver = new IntersectionObserver(function(entries, self) {
+  entries.forEach(entry => {
+    if(entry.isIntersecting) {
+      loadImage(entry.target);
+
+      self.unobserve(entry.target);
+    }
+  });
+}, config);
+
+/**
+ * Load image src using data-src attribute
+ */
+loadImage = (img) => {
+  const src = img.getAttribute('data-src');
+  if(!src) return;
+  img.src = src;
+}
+
+
+/**
  * Fetch all neighborhoods and set their HTML.
  */
 fetchNeighborhoods = () => {
@@ -141,7 +169,9 @@ createRestaurantHTML = (restaurant) => {
   const image = document.createElement('img');
   image.className = 'restaurant-img';
   image.alt = restaurant.alt_text;
-  image.src = DBHelper.imageUrlForRestaurant(restaurant);
+  image.dataset.src = `${DBHelper.imageUrlForRestaurant(restaurant)}_400.jpg`;
+  imageObserver.observe(image);
+  // image.src = DBHelper.imageUrlForRestaurant(restaurant);
   li.append(image);
 
   const details = document.createElement('div')
