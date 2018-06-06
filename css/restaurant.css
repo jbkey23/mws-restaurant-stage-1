@@ -124,6 +124,7 @@ nav h1 a {
 .inside {
   display: flex;
   flex-direction: column;
+  min-height: 100vh;
 }
 
 .inside header {

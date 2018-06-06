@@ -2,9 +2,10 @@
 <html lang="en">
 
 <head>
+  <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="stylesheet" src="//normalize-css.googlecode.com/svn/trunk/normalize.css" />
-  <link rel="stylesheet" href="css/main.css">
+  <link rel="stylesheet" href="dist/css/main.css">
   <link rel="manifest" href="/manifest.json">
   <meta name="theme-color" content="#252831">
   <title>Restaurant Reviews</title>
@@ -19,6 +20,7 @@
 
   <main id="maincontent">
     <section id="map-container">
+      <button class="show-map-btn" aria-controls="map" aria-expanded="false">Show Map ▼</button>
       <div id="map" role="application" aria-label="Map of restaurants"></div>
     </section>
     <section>
@@ -35,10 +37,10 @@
     </section>
   </main>
 
-  <script src="js/idb.js"></script>
-  <script src="js/sw_controller.js"></script>
-  <script type="application/javascript" charset="utf-8" src="js/dbhelper.js"></script>
-  <script type="application/javascript" charset="utf-8" src="js/main.js"></script>
+  <script src="dist/js/idb.js"></script>
+  <script src="dist/js/sw_controller.js"></script>
+  <script type="application/javascript" charset="utf-8" src="dist/js/dbhelper.js"></script>
+  <script type="application/javascript" charset="utf-8" src="dist/js/main.js"></script>
   <script async defer src="https://maps.googleapis.com/maps/api/js?libraries=places&callback=initMap"></script>
 
 

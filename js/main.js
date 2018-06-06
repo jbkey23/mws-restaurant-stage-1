@@ -13,6 +13,28 @@ document.addEventListener('DOMContentLoaded', (event) => {
 });
 
 /**
+ * Add listner for show map button
+ */
+const showMapBtn = document.querySelector('.show-map-btn');
+showMapBtn.addEventListener('click', function() {
+  const mapContainer = document.querySelector('#map');
+
+  let isExpanded = this.getAttribute('aria-expanded') === 'true';
+
+  if(!isExpanded) {
+    this.textContent = 'Hide Map ▲';
+    mapContainer.classList.add('show');
+  }
+  else {
+    this.textContent = 'Show Map ▼'
+    mapContainer.classList.remove('show');
+  }
+  
+  isExpanded = !isExpanded;
+  this.setAttribute('aria-expanded', isExpanded);
+});
+
+/**
  * Add intersection observers to lazy load restaurant images
  */
 const config = {
@@ -33,17 +55,17 @@ let imageObserver = new IntersectionObserver(function(entries, self) {
 /**
  * Load image src using data-src attribute
  */
-loadImage = (img) => {
+const loadImage = (img) => {
   const src = img.getAttribute('data-src');
   if(!src) return;
   img.src = src;
-}
+};
 
 
 /**
  * Fetch all neighborhoods and set their HTML.
  */
-fetchNeighborhoods = () => {
+const fetchNeighborhoods = () => {
   DBHelper.fetchNeighborhoods((error, neighborhoods) => {
     if (error) { // Got an error
       console.error(error);
@@ -52,12 +74,12 @@ fetchNeighborhoods = () => {
       fillNeighborhoodsHTML();
     }
   });
-}
+};
 
 /**
  * Set neighborhoods HTML.
  */
-fillNeighborhoodsHTML = (neighborhoods = self.neighborhoods) => {
+const fillNeighborhoodsHTML = (neighborhoods = self.neighborhoods) => {
   const select = document.getElementById('neighborhoods-select');
   neighborhoods.forEach(neighborhood => {
     const option = document.createElement('option');
@@ -65,12 +87,12 @@ fillNeighborhoodsHTML = (neighborhoods = self.neighborhoods) => {
     option.value = neighborhood;
     select.append(option);
   });
-}
+};
 
 /**
  * Fetch all cuisines and set their HTML.
  */
-fetchCuisines = () => {
+const fetchCuisines = () => {
   DBHelper.fetchCuisines((error, cuisines) => {
     if (error) { // Got an error!
       console.error(error);
@@ -79,12 +101,12 @@ fetchCuisines = () => {
       fillCuisinesHTML();
     }
   });
-}
+};
 
 /**
  * Set cuisines HTML.
  */
-fillCuisinesHTML = (cuisines = self.cuisines) => {
+const fillCuisinesHTML = (cuisines = self.cuisines) => {
   const select = document.getElementById('cuisines-select');
 
   cuisines.forEach(cuisine => {
@@ -93,7 +115,7 @@ fillCuisinesHTML = (cuisines = self.cuisines) => {
     option.value = cuisine;
     select.append(option);
   });
-}
+};
 
 /**
  * Initialize Google map, called from HTML.
@@ -111,10 +133,12 @@ window.initMap = () => {
   updateRestaurants();
 }
 
+
+
 /**
  * Update page and map for current restaurants.
  */
-updateRestaurants = () => {
+const updateRestaurants = () => {
   const cSelect = document.getElementById('cuisines-select');
   const nSelect = document.getElementById('neighborhoods-select');
 
@@ -132,12 +156,12 @@ updateRestaurants = () => {
       fillRestaurantsHTML();
     }
   })
-}
+};
 
 /**
  * Clear current restaurants, their HTML and remove their map markers.
  */
-resetRestaurants = (restaurants) => {
+const resetRestaurants = (restaurants) => {
   // Remove all restaurants
   self.restaurants = [];
   const ul = document.getElementById('restaurants-list');
@@ -147,23 +171,23 @@ resetRestaurants = (restaurants) => {
   self.markers.forEach(m => m.setMap(null));
   self.markers = [];
   self.restaurants = restaurants;
-}
+};
 
 /**
  * Create all restaurants HTML and add them to the webpage.
  */
-fillRestaurantsHTML = (restaurants = self.restaurants) => {
+const fillRestaurantsHTML = (restaurants = self.restaurants) => {
   const ul = document.getElementById('restaurants-list');
   restaurants.forEach(restaurant => {
     ul.append(createRestaurantHTML(restaurant));
   });
   addMarkersToMap();
-}
+};
 
 /**
  * Create restaurant HTML.
  */
-createRestaurantHTML = (restaurant) => {
+const createRestaurantHTML = (restaurant) => {
   const li = document.createElement('li');
 
   const image = document.createElement('img');
@@ -195,12 +219,12 @@ createRestaurantHTML = (restaurant) => {
   details.append(more);
 
   return li;
-}
+};
 
 /**
  * Add markers for current restaurants to the map.
  */
-addMarkersToMap = (restaurants = self.restaurants) => {
+const addMarkersToMap = (restaurants = self.restaurants) => {
   restaurants.forEach(restaurant => {
     // Add marker to the map
     const marker = DBHelper.mapMarkerForRestaurant(restaurant, self.map);
@@ -209,4 +233,4 @@ addMarkersToMap = (restaurants = self.restaurants) => {
     });
     self.markers.push(marker);
   });
-}
+};

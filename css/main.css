@@ -14,7 +14,10 @@ body,td,th,p{
 body {
 	background-color: #fdfdfd;
 	margin: 0;
-	position:relative;
+  position:relative;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
 }
 
 ul, li {
@@ -48,7 +51,7 @@ article, aside, canvas, details, figcaption, figure, footer, header, hgroup, men
 
 #maincontent {
   background-color: #f3f3f3;
-  min-height: 100%;
+  flex: 1 0 auto;
 }
 
 #footer {
@@ -87,6 +90,32 @@ nav h1 a {
   height: 400px;
   width: 100%;
   background-color: #ccc;
+  transition: height ease 1s;
+}
+
+
+.show-map-btn {
+  display: none;
+}
+
+/* ====================== Mobile Map ====================== */
+@media screen and (max-width: 480px) {
+  #map {
+    height: 0;
+  }
+
+  #map.show {
+    height: 400px;
+  }
+
+  .show-map-btn {
+    font-size: 18px;
+    padding: 10px;
+    cursor: pointer;
+    display: block;
+    text-align: center;
+    width: 100%;
+  }
 }
 
 /* ====================== Restaurant Filtering ====================== */
