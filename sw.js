@@ -1,4 +1,4 @@
-const staticCacheName = 'restaurant-reviews-static-v1'
+const staticCacheName = 'restaurant-reviews-static-v2';
 
 /**
  * Cache all site assets once service worker installs
@@ -7,7 +7,8 @@ self.addEventListener('install', (event) => {
     const assets = [
         '/',
         'data/restaurants.json',
-        'css/styles.css',
+        'css/main.css',
+        'css/restaurant.css',
         'js/dbhelper.js',
         'js/main.js',
         'js/restaurant_info.js',
@@ -24,12 +25,30 @@ self.addEventListener('install', (event) => {
         'img/8.jpg',
         'img/9.jpg',
         'img/10.jpg',
+        'img/1_400.jpg',
+        'img/2_400.jpg',
+        'img/3_400.jpg',
+        'img/4_400.jpg',
+        'img/5_400.jpg',
+        'img/6_400.jpg',
+        'img/7_400.jpg',
+        'img/8_400.jpg',
+        'img/9_400.jpg',
+        'img/10_400.jpg',
         'img/icon-256.png',
         'img/icon-512.png'
     ];
   
     event.waitUntil(
       caches.open(staticCacheName).then(function(cache) {
+        caches.keys().then(keys => {
+          keys.forEach(key => {
+            if (key !== staticCacheName) {
+              caches.delete(key);
+            }
+          });
+        })
+
         return cache.addAll(assets);
       })
     );
