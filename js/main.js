@@ -171,7 +171,6 @@ createRestaurantHTML = (restaurant) => {
   image.alt = restaurant.alt_text;
   image.dataset.src = `${DBHelper.imageUrlForRestaurant(restaurant)}_400.jpg`;
   imageObserver.observe(image);
-  // image.src = DBHelper.imageUrlForRestaurant(restaurant);
   li.append(image);
 
   const details = document.createElement('div')
