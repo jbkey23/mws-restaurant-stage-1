@@ -39,7 +39,7 @@ self.addEventListener('install', (event) => {
     ];
   
     event.waitUntil(
-      caches.open(staticCacheName).then(function(cache) {
+      caches.open(staticCacheName).then((cache) => {
         caches.keys().then(keys => {
           keys.forEach(key => {
             if (key !== staticCacheName) {
@@ -58,11 +58,11 @@ self.addEventListener('install', (event) => {
  */
 self.addEventListener('fetch', (event) => {
     event.respondWith(
-      caches.open(staticCacheName).then(function(cache) {
-        return cache.match(event.request).then(function(response) {
+      caches.open(staticCacheName).then((cache) => {
+        return cache.match(event.request).then((response) => {
           if (response) return response;
     
-          return fetch(event.request).then(function(networkResponse) {
+          return fetch(event.request).then((networkResponse) => {
             const urlFromOrigin = event.request.url.startsWith(`${location.origin}`);
 
             if(urlFromOrigin) {
