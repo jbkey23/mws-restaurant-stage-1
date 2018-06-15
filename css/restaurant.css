@@ -199,6 +199,11 @@ nav h1 a {
   content: '★';
 }
 
+.star-rating > input[type='radio']:focus + .star {
+  border: 1px dotted #d47300;
+  padding: 5px;
+}
+
 #review-form input[type='submit'] {
   -webkit-appearance: none;
   background-color: #ffa500;
@@ -216,6 +221,10 @@ nav h1 a {
   display: flex;
   flex-direction: column;
   min-height: 100vh;
+}
+
+.inside.no-scroll {
+  overflow: hidden;
 }
 
 .inside header {
