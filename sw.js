@@ -40,15 +40,25 @@ self.addEventListener('install', (event) => {
   
     event.waitUntil(
       caches.open(staticCacheName).then((cache) => {
-        caches.keys().then(keys => {
-          keys.forEach(key => {
-            if (key !== staticCacheName) {
-              caches.delete(key);
-            }
-          });
-        })
-
         return cache.addAll(assets);
+      })
+    );
+  });
+
+/**
+ * Delete old caches
+ */
+  self.addEventListener('activate', (event) => {
+    event.waitUntil(
+      caches.keys().then((cacheNames) => {
+        return Promise.all(
+          cacheNames.filter((cacheName) => {
+            return cacheName.startsWith('restaurant-reviews-') &&
+                   cacheName !== staticCacheName;
+          }).map((cacheName) => {
+            return caches.delete(cacheName);
+          })
+        );
       })
     );
   });
