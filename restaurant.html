@@ -53,6 +53,40 @@
       <ul id="reviews-list"></ul>
     </section>
     <!-- End reviews -->
+
+    <!-- Modal -->
+    <div class="modal-overlay">
+      <section class="modal">
+        <h1 class="modal__title">Leave a review</h1>
+        <form name="add-review-form" id="review-form">
+          <div class="form-field">
+            <label for="name">*Name:</label>
+            <input type="text" name="name" id="name" required>
+          </div>
+          <div class="form-field">
+            <label id="rating-label">*Rating:</label>
+            <radiogroup class="star-rating" aria-labelledby="rating-label">
+              <input type="radio" name="rating" id="star-5" value="5" required>
+              <label for="star-5" class="star"></label>
+              <input type="radio" name="rating" id="star-4" value="4" required>
+              <label for="star-4" class="star"></label>
+              <input type="radio" name="rating" id="star-3" value="3" required>
+              <label for="star-3" class="star"></label>
+              <input type="radio" name="rating" id="star-2" value="2" required>
+              <label for="star-2" class="star"></label>
+              <input type="radio" name="rating" id="star-1" value="1" required>
+              <label for="star-1" class="star"></label>
+            </radiogroup>
+          </div>
+          <div class="form-field">
+            <label for="comments">Comments:</label>
+            <textarea name="comments" id="comments" cols="30" rows="10"></textarea>
+          </div>
+          <p><em>*Required Field</em></p>
+          <input type="submit" value="Add Review">
+        </form>
+      </section>
+    </div>
   </main>
   <!-- End main -->
 
