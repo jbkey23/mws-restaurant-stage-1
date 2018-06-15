@@ -10,13 +10,18 @@ class DBHelper {
       return Promise.resolve();
     }
   
-    return idb.open('restaturant-reviews', 1, function(upgradeDb) {
+    return idb.open('restaturant-reviews', 2, function(upgradeDb) {
       switch(upgradeDb.oldVersion) {
         case 0:
           const store = upgradeDb.createObjectStore('restaurants', {
             keyPath: 'id'
           });
           store.createIndex('by-id', 'id');
+        case 1:
+          const reviewsStore = upgradeDb.createObjectStore('reviews', {
+            keyPath: 'id'
+          });
+          reviewsStore.createIndex('by-restaurant-id', 'restaurant_id');
       }
     });
   }
@@ -27,7 +32,7 @@ class DBHelper {
    */
   static get DATABASE_URL() {
     const port = 1337 // Change this to your server port
-    return `http://localhost:${port}/restaurants`;
+    return `http://localhost:${port}`;
   }
 
   /**
@@ -35,7 +40,7 @@ class DBHelper {
    */
   static fetchRestaurants(callback) {
 
-    fetch(DBHelper.DATABASE_URL)
+    fetch(`${DBHelper.DATABASE_URL}/restaurants`)
     .then(data => data.json())
     .then(restaurants => {
       DBHelper.DB_PROMISE.then(db => {
@@ -66,18 +71,82 @@ class DBHelper {
    * Fetch a restaurant by its ID.
    */
   static fetchRestaurantById(id, callback) {
-    // fetch all restaurants with proper error handling.
-    DBHelper.fetchRestaurants((error, restaurants) => {
-      if (error) {
-        callback(error, null);
-      } else {
-        const restaurant = restaurants.find(r => r.id == id);
-        if (restaurant) { // Got the restaurant
-          callback(null, restaurant);
-        } else { // Restaurant does not exist in the database
-          callback('Restaurant does not exist', null);
-        }
-      }
+    // fetch restaurant by id with proper error handling.
+    fetch(`${DBHelper.DATABASE_URL}/restaurants/${id}`)
+    .then(data => data.json())
+    .then(restaurant => {
+      DBHelper.DB_PROMISE.then(db => {
+        const tx = db.transaction('restaurants', 'readwrite');
+        const restaurantStore = tx.objectStore('restaurants');
+
+        restaurantStore.put(restaurant);
+      });
+
+      return restaurant;
+      // callback(null, restaurants)
+    })
+    .then(restaurant => {
+      DBHelper.fetchReviewsById(id).then(reviews => {
+        restaurant.reviews = reviews;
+        callback(null, restaurant);
+      })
+    })
+    .catch(() => {
+      DBHelper.DB_PROMISE.then(db => {
+        const tx = db.transaction('restaurants');
+        const restaurantStore = tx.objectStore('restaurants');
+        const reviewsStore = tx.objectStore('reviews');
+        const reviewsIndex = reviewsStore.index('by-restaurant-id');
+        
+        restaurantStore.getAll(`${id}`).then(restaurant => {
+          return restaurant
+          // callback(null, restaurant);
+        })
+        .then(restaurant => {
+          reviewsIndex.getAll(`${id}`).then(reviews => {
+            restaurant.reviews = reviews;
+            callback(null, restaurant);
+          });
+        }); 
+      })
+      .catch(error => callback(error, null));
+    });
+  }
+
+  /**
+   * Fetch a reviews by restaurant ID.
+   */
+  static fetchReviewsById(id) {
+    return fetch(`${DBHelper.DATABASE_URL}/reviews?restaurant_id=${id}`)
+    .then(data => data.json())
+    .then(reviews => {
+      console.log('Reviews from fetch:', reviews);
+
+      DBHelper.DB_PROMISE.then(db => {
+        const tx = db.transaction('reviews', 'readwrite');
+        const reviewStore = tx.objectStore('reviews');
+
+        reviews.forEach(review => {
+          reviewStore.put(review);
+        });
+      });
+
+      // callback(null, reviews)
+      return reviews;
+    })
+    .catch(() => {
+      DBHelper.DB_PROMISE.then(db => {
+        const tx = db.transaction('reviews');
+        const reviewsStore = tx.objectStore('reviews');
+        const reviewsIndex = reviewsStore.index('by-restaurant-id');
+
+        reviewsIndex.getAll(`${id}`).then(reviews => {
+          console.log('Reviews from idb:', reviews);
+          return reviews;
+          // callback(null, reviews);
+        })
+      })
+      .catch(error => error);
     });
   }
 
