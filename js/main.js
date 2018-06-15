@@ -208,6 +208,16 @@ const createRestaurantHTML = (restaurant) => {
   details.className = 'restaurant-details';
   li.append(details);
 
+  const favBtn = document.createElement('button');
+  favBtn.dataset.restaurantId = restaurant.id;
+  favBtn.setAttribute('aria-label', 'Favorite Restaurant');
+  const isFavorite = restaurant.is_favorite;
+  favBtn.innerHTML = isFavorite ? '★' : '☆';
+  favBtn.setAttribute('aria-pressed', isFavorite);
+  favBtn.className = 'fav-btn';
+  favBtn.addEventListener('click', toggleFavorite);
+  details.append(favBtn);
+
   const name = document.createElement('h1');
   name.innerHTML = restaurant.name;
   details.append(name);
@@ -227,6 +237,21 @@ const createRestaurantHTML = (restaurant) => {
 
   return li;
 };
+
+const toggleFavorite = function(event) {
+  const restaurantId = this.dataset.restaurantId;
+  
+  const isPressed = this.getAttribute('aria-pressed') === 'true';
+  
+  if(isPressed) {
+    this.innerHTML = '☆';
+  }
+  else {
+    this.innerHTML = '★';
+  }
+
+  this.setAttribute('aria-pressed', !isPressed);
+}
 
 /**
  * Add markers for current restaurants to the map.

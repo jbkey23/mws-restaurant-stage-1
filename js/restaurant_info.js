@@ -128,6 +128,11 @@ const fillReviewsHTML = (reviews = self.restaurant.reviews) => {
     ul.appendChild(createReviewHTML(review));
   });
   container.appendChild(ul);
+
+  const addReviewBtn = document.createElement('button');
+  addReviewBtn.className = "add-review-btn";
+  addReviewBtn.innerHTML = "+ Add a review";
+  container.appendChild(addReviewBtn);
 };
 
 /**
@@ -147,7 +152,8 @@ const createReviewHTML = (review) => {
   reviewHeader.appendChild(name);
 
   const date = document.createElement('p');
-  date.innerHTML = review.date;
+  const dateString = new Date(review.updatedAt);
+  date.innerHTML = dateString.toDateString();
   date.className = 'review-date';
   reviewHeader.appendChild(date);
 

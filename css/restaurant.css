@@ -273,6 +273,16 @@ nav h1 a {
   color: #555;
 }
 
+.add-review-btn {
+  -webkit-appearance: none;
+  border: none;
+  border-radius: 4px;
+  background-color: #252831;
+  color: #fff;
+  font-size: 16px;
+  padding: 10px 20px;
+}
+
 #restaurant-hours td {
   color: #666;
 }

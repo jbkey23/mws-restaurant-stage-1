@@ -186,11 +186,32 @@ nav h1 a {
 #restaurants-list li .restaurant-details {
   align-items: center;
   display: flex;
+  position: relative;
   flex-direction: column;
   flex: 1;
   justify-content: space-between;
   padding: 10px;
   text-align: center;
+}
+
+.restaurant-details .fav-btn,
+.restaurant-details .fav-btn[aria-pressed='false'] {
+  position: absolute;
+  top: -10%;
+  right: 10px;
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  font-size: 20px;
+  color: #c78100;
+  border: none;
+  cursor: pointer;
+  box-shadow: 0px 0px 1px 0 #333;
+}
+
+.restaurant-details .fav-btn[aria-pressed='true'] {
+  background-color: #c78100;
+  color: #fff;
 }
 
 #restaurants-list li h1 {
