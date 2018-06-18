@@ -151,6 +151,11 @@ nav h1 a {
   width: 200px;
 }
 
+.show-fav-filter-label {
+  color: #fff;
+  font-size: 14px;
+}
+
 /* ====================== Restaurant Listing ====================== */
 #restaurants-list {
   display: flex;

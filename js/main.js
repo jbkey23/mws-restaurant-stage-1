@@ -148,9 +148,11 @@ initMap = () => {
 const updateRestaurants = () => {
   const cSelect = document.getElementById('cuisines-select');
   const nSelect = document.getElementById('neighborhoods-select');
+  const favFilter = document.getElementById('show-fav-filter');
 
   const cIndex = cSelect.selectedIndex;
   const nIndex = nSelect.selectedIndex;
+  const showFav = favFilter.checked;
 
   const cuisine = cSelect[cIndex].value;
   const neighborhood = nSelect[nIndex].value;
@@ -159,6 +161,9 @@ const updateRestaurants = () => {
     if (error) { // Got an error!
       console.error(error);
     } else {
+      if(showFav) {
+        restaurants = restaurants.filter(r => r.is_favorite == 'true');
+      }
       resetRestaurants(restaurants);
       fillRestaurantsHTML();
     }
@@ -238,6 +243,9 @@ const createRestaurantHTML = (restaurant) => {
   return li;
 };
 
+/**
+ * Toggle favorite button on restaurant card
+ */
 const toggleFavorite = function(event) {
   const restaurantId = this.dataset.restaurantId;
   
@@ -250,7 +258,17 @@ const toggleFavorite = function(event) {
     this.innerHTML = '★';
   }
 
-  DBHelper.toggleFavorite(restaurantId, !isPressed);
+  DBHelper.toggleFavorite(restaurantId, !isPressed, (error) => {
+    if(error) {
+      console.error(error);
+    }
+    else {
+      const favFilter = document.getElementById('show-fav-filter');
+      if(favFilter.checked) {
+        updateRestaurants();
+      }
+    }
+  });
   this.setAttribute('aria-pressed', !isPressed);
 }
 

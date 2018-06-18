@@ -33,6 +33,10 @@
         <select id="cuisines-select" name="cuisines" onchange="updateRestaurants()" aria-label="Filter restaurants by cuisine">
           <option value="all">All Cuisines</option>
         </select>
+        <label class="show-fav-filter-label">
+          <input type="checkbox" name="show-fav-filter" id="show-fav-filter" onchange="updateRestaurants()">
+          Only show favorite restaurants
+        </label>
       </div>
       <ul id="restaurants-list"></ul>
     </section>

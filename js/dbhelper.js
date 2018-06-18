@@ -270,7 +270,7 @@ class DBHelper {
   /**
    * Toggle restaurant as favorite
    */
-  static toggleFavorite(restaurantId, isFavorite) {
+  static toggleFavorite(restaurantId, isFavorite, callback) {
     const putUrl = `${DBHelper.DATABASE_URL}/restaurants/${restaurantId}/?is_favorite=${isFavorite}`;
     
     const putOptions = {
@@ -280,9 +280,11 @@ class DBHelper {
     fetch(putUrl, putOptions)
     .then(resp => {
       console.log('put response', resp);
+      callback(null);
     })
     .catch(error => {
       console.log('error toggling favorite', error);
+      callback(error);
     });
 
   }
