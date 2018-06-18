@@ -1,5 +1,8 @@
 let restaurant;
 var map;
+const modalOverlay = document.querySelector('.modal-overlay');
+const modal = document.querySelector('.modal');
+let focusedElementBeforeModal;
 
 /**
  * Initialize map as soon as the page is loaded.
@@ -61,6 +64,73 @@ const fetchRestaurantFromURL = (callback) => {
     });
   }
 };
+
+
+
+/**
+ * Show modal
+ */
+const showModal = () => {
+  focusedElementBeforeModal = document.activeElement;
+
+  modal.addEventListener('keydown', trapTabKey);
+
+  const body = document.querySelector('body');
+  body.classList.add('no-scroll');
+  modalOverlay.addEventListener('click', closeModal);
+
+  const focusableElementsString = 'a[href], area[href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), button:not([disabled]), iframe, object, embed, [tabindex="0"], [contenteditable]';
+  let focusableElements = modal.querySelectorAll(focusableElementsString);
+
+  focusableElements = Array.from(focusableElements);
+
+  const firstTabStop = focusableElements[0];
+  const lastTabStop = focusableElements[focusableElements.length - 1];
+
+  modalOverlay.style.display = 'flex';
+
+  firstTabStop.focus();
+
+  function trapTabKey(e) {
+    
+    // Check for TAB key press
+    if (e.keyCode === 9) {
+
+      // SHIFT + TAB
+      if (e.shiftKey) {
+        if(document.activeElement === firstTabStop) {
+          e.preventDefault();
+          lastTabStop.focus();
+        }
+
+      // TAB
+      } else {
+        if(document.activeElement === lastTabStop) {
+          e.preventDefault();
+          firstTabStop.focus();
+        }
+      }
+    }
+
+    // ESCAPE
+    if (e.keyCode === 27) {
+      closeModal(e, true);
+    }
+  }
+}
+
+/**
+ * Close modal
+ */
+const closeModal = (e, close = false) => {
+  if(e.target === modalOverlay || close) {
+    const body = document.querySelector('body');
+    body.classList.remove('no-scroll');
+    modalOverlay.style.display = 'none';
+
+    focusedElementBeforeModal.focus();
+  }
+}
 
 /**
  * Create restaurant HTML and add it to the webpage
@@ -132,6 +202,7 @@ const fillReviewsHTML = (reviews = self.restaurant.reviews) => {
   const addReviewBtn = document.createElement('button');
   addReviewBtn.className = "add-review-btn";
   addReviewBtn.innerHTML = "+ Add a review";
+  addReviewBtn.addEventListener('click', showModal);
   container.appendChild(addReviewBtn);
 };
 

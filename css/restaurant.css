@@ -131,7 +131,7 @@ nav h1 a {
   bottom: 0;
   background-color: #0000009c;
   z-index: 2000;
-  display: flex;
+  display: none;
   justify-content: center;
   align-items: center;
   padding: 10px;
@@ -194,6 +194,8 @@ nav h1 a {
 
 .star-rating > .star:hover:before,
 .star-rating > .star:hover ~ .star:before,
+.star-rating > input[type='radio']:focus + .star:before,
+.star-rating > input[type='radio']:focus ~ input[type='radio'] + .star:before,
 .star-rating > input[type='radio']:checked + .star:before,
 .star-rating > input[type='radio']:checked ~ input[type='radio'] + .star:before {
   content: '★';
@@ -379,6 +381,7 @@ nav h1 a {
   border-radius: 4px;
   background-color: #252831;
   color: #fff;
+  cursor: pointer;
   font-size: 16px;
   padding: 10px 20px;
 }
