@@ -212,7 +212,7 @@ const createRestaurantHTML = (restaurant) => {
   favBtn.dataset.restaurantId = restaurant.id;
   favBtn.setAttribute('aria-label', 'Favorite Restaurant');
   const isFavorite = restaurant.is_favorite;
-  favBtn.innerHTML = isFavorite ? '★' : '☆';
+  favBtn.innerHTML = isFavorite == 'true' ? '★' : '☆';
   favBtn.setAttribute('aria-pressed', isFavorite);
   favBtn.className = 'fav-btn';
   favBtn.addEventListener('click', toggleFavorite);
@@ -250,6 +250,7 @@ const toggleFavorite = function(event) {
     this.innerHTML = '★';
   }
 
+  DBHelper.toggleFavorite(restaurantId, !isPressed);
   this.setAttribute('aria-pressed', !isPressed);
 }
 

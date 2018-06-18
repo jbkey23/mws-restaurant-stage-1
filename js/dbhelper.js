@@ -267,4 +267,24 @@ class DBHelper {
     return marker;
   }
 
+  /**
+   * Toggle restaurant as favorite
+   */
+  static toggleFavorite(restaurantId, isFavorite) {
+    const putUrl = `${DBHelper.DATABASE_URL}/restaurants/${restaurantId}/?is_favorite=${isFavorite}`;
+    
+    const putOptions = {
+      method: 'PUT'
+    };
+
+    fetch(putUrl, putOptions)
+    .then(resp => {
+      console.log('put response', resp);
+    })
+    .catch(error => {
+      console.log('error toggling favorite', error);
+    });
+
+  }
+
 }
