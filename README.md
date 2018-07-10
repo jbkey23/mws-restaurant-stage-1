@@ -2,6 +2,18 @@
 ---
 #### _Three Stage Course Material Project - Restaurant Reviews_
 
+## Building instructions:
+Before running the server, the files must be built for the project as follows:
+
+1. npm install
+2. gulp build-prod
+
+## Server Repo
+The link to the server repo is below:
+
+https://github.com/jbkey23/mws-restaurant-stage-3
+
+
 ## Project Overview: Stage 1
 
 For the **Restaurant Reviews** projects, you will incrementally convert a static webpage to a mobile-ready web application. In **Stage One**, you will take a static design that lacks accessibility and convert the design to be responsive on different sized displays and accessible for screen reader use. You will also add a service worker to begin the process of creating a seamless offline experience for your users.

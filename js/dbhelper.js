@@ -10,13 +10,18 @@ class DBHelper {
       return Promise.resolve();
     }
   
-    return idb.open('restaturant-reviews', 1, function(upgradeDb) {
+    return idb.open('restaturant-reviews', 2, function(upgradeDb) {
       switch(upgradeDb.oldVersion) {
         case 0:
           const store = upgradeDb.createObjectStore('restaurants', {
             keyPath: 'id'
           });
           store.createIndex('by-id', 'id');
+        case 1:
+          const reviewsStore = upgradeDb.createObjectStore('reviews', {
+            keyPath: 'id'
+          });
+          reviewsStore.createIndex('by-restaurant-id', 'restaurant_id');
       }
     });
   }
@@ -27,7 +32,7 @@ class DBHelper {
    */
   static get DATABASE_URL() {
     const port = 1337 // Change this to your server port
-    return `http://localhost:${port}/restaurants`;
+    return `http://localhost:${port}`;
   }
 
   /**
@@ -35,7 +40,7 @@ class DBHelper {
    */
   static fetchRestaurants(callback) {
 
-    fetch(DBHelper.DATABASE_URL)
+    fetch(`${DBHelper.DATABASE_URL}/restaurants`)
     .then(data => data.json())
     .then(restaurants => {
       DBHelper.DB_PROMISE.then(db => {
@@ -66,18 +71,77 @@ class DBHelper {
    * Fetch a restaurant by its ID.
    */
   static fetchRestaurantById(id, callback) {
-    // fetch all restaurants with proper error handling.
-    DBHelper.fetchRestaurants((error, restaurants) => {
-      if (error) {
-        callback(error, null);
-      } else {
-        const restaurant = restaurants.find(r => r.id == id);
-        if (restaurant) { // Got the restaurant
-          callback(null, restaurant);
-        } else { // Restaurant does not exist in the database
-          callback('Restaurant does not exist', null);
-        }
-      }
+    // fetch restaurant by id with proper error handling.
+    fetch(`${DBHelper.DATABASE_URL}/restaurants/${id}`)
+    .then(data => data.json())
+    .then(restaurant => {
+      DBHelper.DB_PROMISE.then(db => {
+        const tx = db.transaction('restaurants', 'readwrite');
+        const restaurantStore = tx.objectStore('restaurants');
+
+        restaurantStore.put(restaurant);
+      });
+
+      return restaurant;
+    })
+    .then(restaurant => {
+      DBHelper.fetchReviewsById(id).then(reviews => {
+        restaurant.reviews = reviews;
+        callback(null, restaurant);
+      })
+    })
+    .catch(() => {
+      DBHelper.DB_PROMISE.then(db => {
+        const tx = db.transaction(['restaurants', 'reviews']);
+        
+        const restaurantStore = tx.objectStore('restaurants');
+        const reviewsStore = tx.objectStore('reviews');
+        const reviewsIndex = reviewsStore.index('by-restaurant-id');
+        
+        restaurantStore.get(Number(id)).then(restaurant => {
+          return restaurant || {};
+        })
+        .then(restaurant => {
+          reviewsIndex.getAll(Number(id)).then(reviews => {
+            restaurant.reviews = reviews;
+            callback(null, restaurant);
+          });
+        }); 
+      })
+      .catch(error => callback(error, null));
+    });
+  }
+
+  /**
+   * Fetch a reviews by restaurant ID.
+   */
+  static fetchReviewsById(id) {
+    return fetch(`${DBHelper.DATABASE_URL}/reviews?restaurant_id=${id}`)
+    .then(data => data.json())
+    .then(reviews => {
+
+      DBHelper.DB_PROMISE.then(db => {
+        const tx = db.transaction('reviews', 'readwrite');
+        const reviewStore = tx.objectStore('reviews');
+
+        reviews.forEach(review => {
+          reviewStore.put(review);
+        });
+      });
+
+      return reviews;
+    })
+    .catch(() => {
+      DBHelper.DB_PROMISE.then(db => {
+        const tx = db.transaction('reviews');
+        const reviewsStore = tx.objectStore('reviews');
+        const reviewsIndex = reviewsStore.index('by-restaurant-id');
+
+        reviewsIndex.getAll(`${id}`).then(reviews => {
+          return reviews;
+        })
+      })
+      .catch(error => error);
     });
   }
 
@@ -188,14 +252,96 @@ class DBHelper {
    * Map marker for a restaurant.
    */
   static mapMarkerForRestaurant(restaurant, map) {
-    const marker = new google.maps.Marker({
-      position: restaurant.latlng,
-      title: restaurant.name,
-      url: DBHelper.urlForRestaurant(restaurant),
-      map: map,
-      animation: google.maps.Animation.DROP}
-    );
+    // https://leafletjs.com/reference-1.3.0.html#marker  
+    const marker = new L.marker([restaurant.latlng.lat, restaurant.latlng.lng],
+      {title: restaurant.name,
+      alt: restaurant.name,
+      url: DBHelper.urlForRestaurant(restaurant)
+      })
+      marker.addTo(newMap);
     return marker;
+  }
+
+  /**
+   * Toggle restaurant as favorite
+   */
+  static toggleFavorite(restaurantId, isFavorite, callback) {
+    const putUrl = `${DBHelper.DATABASE_URL}/restaurants/${restaurantId}/?is_favorite=${isFavorite}`;
+    
+    const putOptions = {
+      method: 'PUT'
+    };
+
+    DBHelper.sendRequest(putUrl, putOptions, callback);
+
+  }
+
+  /**
+   * Post new review
+   */
+  static postReview(data, callback) {
+    const postUrl = `${DBHelper.DATABASE_URL}/reviews/`;
+    
+    const postOptions = {
+      method: 'POST',
+      body: JSON.stringify(data)
+    };
+
+    DBHelper.sendRequest(postUrl, postOptions, callback);
+    
+  }
+
+  /**
+   * Try to make fetch request if online; otherwise save request to local storage queue
+   */
+  static sendRequest(url, options, callback) {
+    if(navigator.onLine) {
+      fetch(url, options)
+      .then(resp => {
+        callback(null);
+      })
+      .catch(error => {
+        callback(error);
+      });
+    }
+    else {
+      DBHelper.queueRequest({url, options});
+      callback('OFFLINE');
+    }
+  }
+
+  /**
+   * Add request to local storage queue when offline
+   */
+  static queueRequest(requestData) {
+    let requestQueue = JSON.parse(localStorage.getItem('requestQueue')) || [];
+
+    requestQueue.push(requestData);
+
+    localStorage.setItem('requestQueue', JSON.stringify(requestQueue));
+  }
+
+  /**
+   * Loop through request queue and make the requests
+   */
+  static clearRequestQueue() {
+    let requestQueue = JSON.parse(localStorage.getItem('requestQueue')) || null;
+
+    if(requestQueue && requestQueue.length > 0) {
+      let sent = requestQueue.reduce((prevRequest, requestData) => {
+        return prevRequest.then(() => {
+          return fetch(requestData.url, requestData.options);
+        });
+      }, Promise.resolve());
+
+      sent.then(() => {
+        localStorage.setItem('requestQueue', '[]');
+        updateRestaurants();
+      });
+    }
+    else {
+      //request queue is empty
+    }
   }
 
 }

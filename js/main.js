@@ -1,16 +1,28 @@
 let restaurants,
   neighborhoods,
   cuisines
-var map
+// var map
+var newMap
 var markers = []
 
 /**
  * Fetch neighborhoods and cuisines as soon as the page is loaded.
  */
 document.addEventListener('DOMContentLoaded', (event) => {
+  initMap();
   fetchNeighborhoods();
   fetchCuisines();
+
+  if(navigator.onLine) {
+    DBHelper.clearRequestQueue();
+  }
 });
+
+/**
+ * Listen for online event and try making queued requests (if any)
+ */
+window.addEventListener('online', DBHelper.clearRequestQueue);
+
 
 /**
  * Add listner for show map button
@@ -117,23 +129,28 @@ const fillCuisinesHTML = (cuisines = self.cuisines) => {
   });
 };
 
+const mapboxToken = 'pk.eyJ1IjoiamtleTIzIiwiYSI6ImNqaWJwZWRyNzA0dXgzcHIzODdkbjhseGsifQ.dhABWlTNS9eYEhtvdpFosQ';
+
 /**
- * Initialize Google map, called from HTML.
+ * Initialize leaflet map, called from HTML.
  */
-window.initMap = () => {
-  let loc = {
-    lat: 40.722216,
-    lng: -73.987501
-  };
-  self.map = new google.maps.Map(document.getElementById('map'), {
-    zoom: 12,
-    center: loc,
-    scrollwheel: false
-  });
+initMap = () => {
+  self.newMap = L.map('map', {
+        center: [40.722216, -73.987501],
+        zoom: 12,
+        scrollWheelZoom: false
+      });
+  L.tileLayer(`https://api.tiles.mapbox.com/v4/{id}/{z}/{x}/{y}.jpg70?access_token=${mapboxToken}`, {
+    mapboxToken: `${mapboxToken}`,
+    maxZoom: 18,
+    attribution: 'Map data &copy; <a href="https://www.openstreetmap.org/">OpenStreetMap</a> contributors, ' +
+      '<a href="https://creativecommons.org/licenses/by-sa/2.0/">CC-BY-SA</a>, ' +
+      'Imagery © <a href="https://www.mapbox.com/">Mapbox</a>',
+    id: 'mapbox.streets'
+  }).addTo(newMap);
+
   updateRestaurants();
 }
-
-
 
 /**
  * Update page and map for current restaurants.
@@ -141,9 +158,11 @@ window.initMap = () => {
 const updateRestaurants = () => {
   const cSelect = document.getElementById('cuisines-select');
   const nSelect = document.getElementById('neighborhoods-select');
+  const favFilter = document.getElementById('show-fav-filter');
 
   const cIndex = cSelect.selectedIndex;
   const nIndex = nSelect.selectedIndex;
+  const showFav = favFilter.checked;
 
   const cuisine = cSelect[cIndex].value;
   const neighborhood = nSelect[nIndex].value;
@@ -152,6 +171,9 @@ const updateRestaurants = () => {
     if (error) { // Got an error!
       console.error(error);
     } else {
+      if(showFav) {
+        restaurants = restaurants.filter(r => r.is_favorite == 'true');
+      }
       resetRestaurants(restaurants);
       fillRestaurantsHTML();
     }
@@ -168,7 +190,7 @@ const resetRestaurants = (restaurants) => {
   ul.innerHTML = '';
 
   // Remove all map markers
-  self.markers.forEach(m => m.setMap(null));
+  self.markers.forEach(m => m.removeFrom(newMap));
   self.markers = [];
   self.restaurants = restaurants;
 };
@@ -201,6 +223,16 @@ const createRestaurantHTML = (restaurant) => {
   details.className = 'restaurant-details';
   li.append(details);
 
+  const favBtn = document.createElement('button');
+  favBtn.dataset.restaurantId = restaurant.id;
+  favBtn.setAttribute('aria-label', 'Favorite Restaurant');
+  const isFavorite = restaurant.is_favorite;
+  favBtn.innerHTML = isFavorite == 'true' ? '★' : '☆';
+  favBtn.setAttribute('aria-pressed', isFavorite);
+  favBtn.className = 'fav-btn';
+  favBtn.addEventListener('click', toggleFavorite);
+  details.append(favBtn);
+
   const name = document.createElement('h1');
   name.innerHTML = restaurant.name;
   details.append(name);
@@ -222,15 +254,67 @@ const createRestaurantHTML = (restaurant) => {
 };
 
 /**
+ * Toggle favorite button on restaurant card
+ */
+const toggleFavorite = function(event) {
+  const restaurantId = this.dataset.restaurantId;
+  
+  const isPressed = this.getAttribute('aria-pressed') === 'true';
+
+  DBHelper.toggleFavorite(restaurantId, !isPressed, (error) => {
+    if(error) {
+      if(error === 'OFFLINE') {
+        showOfflineAlert('You are offline. Your request will be processed once you are online again.');
+      }
+      else {
+        console.error(error);
+      }
+    }
+    else {
+      if(isPressed) {
+        this.innerHTML = '☆';
+      }
+      else {
+        this.innerHTML = '★';
+      }
+
+      const favFilter = document.getElementById('show-fav-filter');
+      this.setAttribute('aria-pressed', !isPressed);
+      if(favFilter.checked) {
+        updateRestaurants();
+      }
+    }
+  });
+}
+
+/**
  * Add markers for current restaurants to the map.
  */
 const addMarkersToMap = (restaurants = self.restaurants) => {
   restaurants.forEach(restaurant => {
     // Add marker to the map
-    const marker = DBHelper.mapMarkerForRestaurant(restaurant, self.map);
-    google.maps.event.addListener(marker, 'click', () => {
-      window.location.href = marker.url
-    });
+    const marker = DBHelper.mapMarkerForRestaurant(restaurant, self.newMap);
+    marker.on("click", onClick);
+    function onClick() {
+      window.location.href = marker.options.url;
+    }
+
     self.markers.push(marker);
   });
+}
+
+/**
+ * Show offline alert when a request is attempted while offline.
+ */
+const showOfflineAlert = (msg = "You are offline. Try again later.") => {
+  const offlineAlert = document.querySelector('#offline-alert');
+  offlineAlert.innerHTML = msg;
+  offlineAlert.setAttribute('role', 'alert');
+  offlineAlert.className = 'showing';
+
+  // hide alert after 5 seconds
+  setTimeout(() => {
+    offlineAlert.removeAttribute('role');
+    offlineAlert.className = '';
+  }, 5000);
 };

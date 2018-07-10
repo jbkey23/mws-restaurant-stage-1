@@ -120,6 +120,124 @@ nav h1 a {
     text-decoration: underline;
 }
 
+/* ====================== Form Modal ====================== */
+.modal-overlay {
+  width: 100vw;
+  height: 100vh;
+  position: fixed;
+  top: 0;
+  right: 0;
+  left: 0;
+  bottom: 0;
+  background-color: #0000009c;
+  z-index: 2000;
+  display: none;
+  justify-content: center;
+  align-items: center;
+  padding: 10px;
+}
+
+.modal {
+  background-color: #fff;
+  border-radius: 20px 0;
+  overflow: hidden;
+  max-width: 600px;
+  width: 100%;
+}
+
+.modal__title {
+  background-color: #252831;
+  color: #fff;
+  padding: 10px 15px;
+  margin: 0;
+}
+
+#review-form {
+  padding: 20px;
+}
+
+#review-form input[type='text'], #review-form textarea {
+  border-radius: 4px;
+  -webkit-appearance: none;
+  border: 1px solid #333;
+  font-size: 16px;
+  padding: 10px;
+}
+
+#review-form label {
+  font-size: 16px;
+  font-weight: bold;
+}
+.form-field {
+  display: flex;
+  flex-direction: column;
+  margin: 10px 0;
+}
+
+.star-rating {
+  unicode-bidi: bidi-override;
+  direction: rtl;
+  text-align: left;
+}
+
+.star-rating input[type='radio'] {
+  position: absolute;
+  opacity: 0;
+  z-index: -1;
+}
+
+.star:before {
+  content: '☆';
+  color:#d47300;
+  font-size: 20px;
+}
+
+.star-rating > .star:hover:before,
+.star-rating > .star:hover ~ .star:before,
+.star-rating > input[type='radio']:focus + .star:before,
+.star-rating > input[type='radio']:focus ~ input[type='radio'] + .star:before,
+.star-rating > input[type='radio']:checked + .star:before,
+.star-rating > input[type='radio']:checked ~ input[type='radio'] + .star:before {
+  content: '★';
+}
+
+.star-rating > input[type='radio']:focus + .star {
+  border: 1px dotted #d47300;
+  padding: 5px;
+}
+
+#review-form input[type='submit'] {
+  -webkit-appearance: none;
+  background-color: #ffa500;
+  border: none;
+  border-radius: 4px;
+  color: #2d2d2d;
+  cursor: pointer;
+  font-size: 16px;
+  font-weight: bold;
+  padding: 10px 15px;
+}
+
+/* ====================== Offline Alert ====================== */
+#offline-alert {
+  position: fixed;
+  top: 10px;
+  right: 10px;
+  background-color: yellow;
+  padding: 15px;
+  font-weight: bold;
+  border-radius: 4px;
+  z-index: 2000;
+  opacity: 0;
+  transform: translateY(-100px);
+  transition: transform 0.5s ease-in-out, opacity 0.5s ease-in-out;
+}
+
+#offline-alert.showing {
+  opacity: 1;
+  transform: translateY(0);
+}
+
 /* ====================== Restaurant Details ====================== */
 .inside {
   display: flex;
@@ -127,12 +245,16 @@ nav h1 a {
   min-height: 100vh;
 }
 
+.inside.no-scroll {
+  overflow: hidden;
+}
+
 .inside header {
   position: sticky;
   position: -webkit-sticky;
   top: 0;
   width: 100%;
-  z-index: 1000;
+  z-index: 1001;
 }
 
 .inside #maincontent {
@@ -271,6 +393,17 @@ nav h1 a {
 
 .review-content .review-comments {
   color: #555;
+}
+
+.add-review-btn {
+  -webkit-appearance: none;
+  border: none;
+  border-radius: 4px;
+  background-color: #252831;
+  color: #fff;
+  cursor: pointer;
+  font-size: 16px;
+  padding: 10px 20px;
 }
 
 #restaurant-hours td {

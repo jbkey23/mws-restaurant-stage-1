@@ -39,16 +39,26 @@ self.addEventListener('install', (event) => {
     ];
   
     event.waitUntil(
-      caches.open(staticCacheName).then(function(cache) {
-        caches.keys().then(keys => {
-          keys.forEach(key => {
-            if (key !== staticCacheName) {
-              caches.delete(key);
-            }
-          });
-        })
-
+      caches.open(staticCacheName).then((cache) => {
         return cache.addAll(assets);
+      })
+    );
+  });
+
+/**
+ * Delete old caches
+ */
+  self.addEventListener('activate', (event) => {
+    event.waitUntil(
+      caches.keys().then((cacheNames) => {
+        return Promise.all(
+          cacheNames.filter((cacheName) => {
+            return cacheName.startsWith('restaurant-reviews-') &&
+                   cacheName !== staticCacheName;
+          }).map((cacheName) => {
+            return caches.delete(cacheName);
+          })
+        );
       })
     );
   });
@@ -58,11 +68,11 @@ self.addEventListener('install', (event) => {
  */
 self.addEventListener('fetch', (event) => {
     event.respondWith(
-      caches.open(staticCacheName).then(function(cache) {
-        return cache.match(event.request).then(function(response) {
+      caches.open(staticCacheName).then((cache) => {
+        return cache.match(event.request).then((response) => {
           if (response) return response;
     
-          return fetch(event.request).then(function(networkResponse) {
+          return fetch(event.request).then((networkResponse) => {
             const urlFromOrigin = event.request.url.startsWith(`${location.origin}`);
 
             if(urlFromOrigin) {

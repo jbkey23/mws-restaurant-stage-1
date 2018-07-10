@@ -1,23 +1,50 @@
 let restaurant;
 var map;
+const modalOverlay = document.querySelector('.modal-overlay');
+const modal = document.querySelector('.modal');
+let focusedElementBeforeModal;
 
 /**
- * Initialize Google map, called from HTML.
+ * Initialize map as soon as the page is loaded.
  */
-window.initMap = () => {
+document.addEventListener('DOMContentLoaded', (event) => {  
+  initMap();
+
+  if(navigator.onLine) {
+    DBHelper.clearRequestQueue();
+  }
+});
+
+/**
+ * Listen for online event and try making queued requests (if any)
+ */
+window.addEventListener('online', DBHelper.clearRequestQueue);
+
+const mapboxToken = 'pk.eyJ1IjoiamtleTIzIiwiYSI6ImNqaWJwZWRyNzA0dXgzcHIzODdkbjhseGsifQ.dhABWlTNS9eYEhtvdpFosQ';
+
+/**
+ * Initialize leaflet map
+ */
+initMap = () => {
   fetchRestaurantFromURL((error, restaurant) => {
     if (error) { // Got an error!
       console.error(error);
-    } else {
-      self.map = new google.maps.Map(document.getElementById('map'), {
+    } else {      
+      self.newMap = L.map('map', {
+        center: [restaurant.latlng.lat, restaurant.latlng.lng],
         zoom: 16,
-        center: restaurant.latlng,
-        scrollwheel: false
+        scrollWheelZoom: false
       });
+      L.tileLayer(`https://api.tiles.mapbox.com/v4/{id}/{z}/{x}/{y}.jpg70?access_token=${mapboxToken}`, {
+        mapboxToken: `${mapboxToken}`,
+        maxZoom: 18,
+        attribution: 'Map data &copy; <a href="https://www.openstreetmap.org/">OpenStreetMap</a> contributors, ' +
+          '<a href="https://creativecommons.org/licenses/by-sa/2.0/">CC-BY-SA</a>, ' +
+          'Imagery © <a href="https://www.mapbox.com/">Mapbox</a>',
+        id: 'mapbox.streets'    
+      }).addTo(newMap);
       fillBreadcrumb();
-      DBHelper.mapMarkerForRestaurant(self.restaurant, self.map);
-      const mapContainer = document.querySelector('#map');
-      mapContainer.setAttribute('aria-label', `Map of ${restaurant.name} in ${restaurant.neighborhood}`);
+      DBHelper.mapMarkerForRestaurant(self.restaurant, self.newMap);
     }
   });
 }
@@ -46,6 +73,73 @@ const fetchRestaurantFromURL = (callback) => {
     });
   }
 };
+
+
+
+/**
+ * Show modal
+ */
+const showModal = () => {
+  focusedElementBeforeModal = document.activeElement;
+
+  modal.addEventListener('keydown', trapTabKey);
+
+  const body = document.querySelector('body');
+  body.classList.add('no-scroll');
+  modalOverlay.addEventListener('click', closeModal);
+
+  const focusableElementsString = 'a[href], area[href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), button:not([disabled]), iframe, object, embed, [tabindex="0"], [contenteditable]';
+  let focusableElements = modal.querySelectorAll(focusableElementsString);
+
+  focusableElements = Array.from(focusableElements);
+
+  const firstTabStop = focusableElements[0];
+  const lastTabStop = focusableElements[focusableElements.length - 1];
+
+  modalOverlay.style.display = 'flex';
+
+  firstTabStop.focus();
+
+  function trapTabKey(e) {
+    
+    // Check for TAB key press
+    if (e.keyCode === 9) {
+
+      // SHIFT + TAB
+      if (e.shiftKey) {
+        if(document.activeElement === firstTabStop) {
+          e.preventDefault();
+          lastTabStop.focus();
+        }
+
+      // TAB
+      } else {
+        if(document.activeElement === lastTabStop) {
+          e.preventDefault();
+          firstTabStop.focus();
+        }
+      }
+    }
+
+    // ESCAPE
+    if (e.keyCode === 27) {
+      closeModal(e, true);
+    }
+  }
+}
+
+/**
+ * Close modal
+ */
+const closeModal = (e, close = false) => {
+  if(e.target === modalOverlay || close) {
+    const body = document.querySelector('body');
+    body.classList.remove('no-scroll');
+    modalOverlay.style.display = 'none';
+
+    focusedElementBeforeModal.focus();
+  }
+}
 
 /**
  * Create restaurant HTML and add it to the webpage
@@ -113,6 +207,12 @@ const fillReviewsHTML = (reviews = self.restaurant.reviews) => {
     ul.appendChild(createReviewHTML(review));
   });
   container.appendChild(ul);
+
+  const addReviewBtn = document.createElement('button');
+  addReviewBtn.className = "add-review-btn";
+  addReviewBtn.innerHTML = "+ Add a review";
+  addReviewBtn.addEventListener('click', showModal);
+  container.appendChild(addReviewBtn);
 };
 
 /**
@@ -132,7 +232,8 @@ const createReviewHTML = (review) => {
   reviewHeader.appendChild(name);
 
   const date = document.createElement('p');
-  date.innerHTML = review.date;
+  const dateString = new Date(review.updatedAt);
+  date.innerHTML = dateString.toDateString();
   date.className = 'review-date';
   reviewHeader.appendChild(date);
 
@@ -178,4 +279,56 @@ const getParameterByName = (name, url) => {
   if (!results[2])
     return '';
   return decodeURIComponent(results[2].replace(/\+/g, ' '));
+};
+
+const form = document.getElementById('review-form');
+form.addEventListener('submit', submitReviewForm);
+
+/**
+ * Submit review form
+ */
+function submitReviewForm(event, restaurant_id = self.restaurant.id) {
+  event.preventDefault();
+
+  const formElements = form.elements;
+
+  const data = {
+    "restaurant_id": restaurant_id,
+    "name": formElements.name.value,
+    "rating": formElements.rating.value,
+    "comments": formElements.comments.value
+  };
+
+  DBHelper.postReview(data, (error) => {
+
+    if(error) {
+      if(error === 'OFFLINE') {
+        showOfflineAlert('You are offline. Your request will be processed once you are online again.');
+        closeModal({}, true);
+      }
+      else {
+        console.error(error);
+      }
+    }
+    else {
+      closeModal({}, true);
+      location.reload();
+    }
+  });
+}
+
+/**
+ * Show offline alert when a request is attempted while offline.
+ */
+const showOfflineAlert = (msg = "You are offline. Try again later.", shouldReturn = false) => {
+  const offlineAlert = document.querySelector('#offline-alert');
+  offlineAlert.textContent = msg;
+  offlineAlert.setAttribute('role', 'alert');
+  offlineAlert.className = 'showing';
+
+  // hide alert after 5 seconds
+  setTimeout(() => {
+    offlineAlert.removeAttribute('role');
+    offlineAlert.className = '';
+  }, 5000);
 };
