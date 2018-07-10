@@ -83,7 +83,6 @@ class DBHelper {
       });
 
       return restaurant;
-      // callback(null, restaurants)
     })
     .then(restaurant => {
       DBHelper.fetchReviewsById(id).then(reviews => {
@@ -93,17 +92,17 @@ class DBHelper {
     })
     .catch(() => {
       DBHelper.DB_PROMISE.then(db => {
-        const tx = db.transaction('restaurants');
+        const tx = db.transaction(['restaurants', 'reviews']);
+        
         const restaurantStore = tx.objectStore('restaurants');
         const reviewsStore = tx.objectStore('reviews');
         const reviewsIndex = reviewsStore.index('by-restaurant-id');
         
-        restaurantStore.getAll(`${id}`).then(restaurant => {
-          return restaurant
-          // callback(null, restaurant);
+        restaurantStore.get(Number(id)).then(restaurant => {
+          return restaurant || {};
         })
         .then(restaurant => {
-          reviewsIndex.getAll(`${id}`).then(reviews => {
+          reviewsIndex.getAll(Number(id)).then(reviews => {
             restaurant.reviews = reviews;
             callback(null, restaurant);
           });
@@ -120,7 +119,6 @@ class DBHelper {
     return fetch(`${DBHelper.DATABASE_URL}/reviews?restaurant_id=${id}`)
     .then(data => data.json())
     .then(reviews => {
-      console.log('Reviews from fetch:', reviews);
 
       DBHelper.DB_PROMISE.then(db => {
         const tx = db.transaction('reviews', 'readwrite');
@@ -131,7 +129,6 @@ class DBHelper {
         });
       });
 
-      // callback(null, reviews)
       return reviews;
     })
     .catch(() => {
@@ -141,9 +138,7 @@ class DBHelper {
         const reviewsIndex = reviewsStore.index('by-restaurant-id');
 
         reviewsIndex.getAll(`${id}`).then(reviews => {
-          console.log('Reviews from idb:', reviews);
           return reviews;
-          // callback(null, reviews);
         })
       })
       .catch(error => error);
@@ -277,16 +272,76 @@ class DBHelper {
       method: 'PUT'
     };
 
-    fetch(putUrl, putOptions)
-    .then(resp => {
-      console.log('put response', resp);
-      callback(null);
-    })
-    .catch(error => {
-      console.log('error toggling favorite', error);
-      callback(error);
-    });
+    DBHelper.sendRequest(putUrl, putOptions, callback);
 
+  }
+
+  /**
+   * Post new review
+   */
+  static postReview(data, callback) {
+    const postUrl = `${DBHelper.DATABASE_URL}/reviews/`;
+    
+    const postOptions = {
+      method: 'POST',
+      body: JSON.stringify(data)
+    };
+
+    DBHelper.sendRequest(postUrl, postOptions, callback);
+    
+  }
+
+  /**
+   * Try to make fetch request if online; otherwise save request to local storage queue
+   */
+  static sendRequest(url, options, callback) {
+    if(navigator.onLine) {
+      fetch(url, options)
+      .then(resp => {
+        callback(null);
+      })
+      .catch(error => {
+        callback(error);
+      });
+    }
+    else {
+      DBHelper.queueRequest({url, options});
+      callback('OFFLINE');
+    }
+  }
+
+  /**
+   * Add request to local storage queue when offline
+   */
+  static queueRequest(requestData) {
+    let requestQueue = JSON.parse(localStorage.getItem('requestQueue')) || [];
+
+    requestQueue.push(requestData);
+
+    localStorage.setItem('requestQueue', JSON.stringify(requestQueue));
+  }
+
+  /**
+   * Loop through request queue and make the requests
+   */
+  static clearRequestQueue() {
+    let requestQueue = JSON.parse(localStorage.getItem('requestQueue')) || null;
+
+    if(requestQueue && requestQueue.length > 0) {
+      let sent = requestQueue.reduce((prevRequest, requestData) => {
+        return prevRequest.then(() => {
+          return fetch(requestData.url, requestData.options);
+        });
+      }, Promise.resolve());
+
+      sent.then(() => {
+        localStorage.setItem('requestQueue', '[]');
+        updateRestaurants();
+      });
+    }
+    else {
+      //request queue is empty
+    }
   }
 
 }

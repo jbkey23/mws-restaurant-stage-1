@@ -12,7 +12,17 @@ document.addEventListener('DOMContentLoaded', (event) => {
   initMap();
   fetchNeighborhoods();
   fetchCuisines();
+
+  if(navigator.onLine) {
+    DBHelper.clearRequestQueue();
+  }
 });
+
+/**
+ * Listen for online event and try making queued requests (if any)
+ */
+window.addEventListener('online', DBHelper.clearRequestQueue);
+
 
 /**
  * Add listner for show map button
@@ -250,26 +260,31 @@ const toggleFavorite = function(event) {
   const restaurantId = this.dataset.restaurantId;
   
   const isPressed = this.getAttribute('aria-pressed') === 'true';
-  
-  if(isPressed) {
-    this.innerHTML = '☆';
-  }
-  else {
-    this.innerHTML = '★';
-  }
 
   DBHelper.toggleFavorite(restaurantId, !isPressed, (error) => {
     if(error) {
-      console.error(error);
+      if(error === 'OFFLINE') {
+        showOfflineAlert('You are offline. Your request will be processed once you are online again.');
+      }
+      else {
+        console.error(error);
+      }
     }
     else {
+      if(isPressed) {
+        this.innerHTML = '☆';
+      }
+      else {
+        this.innerHTML = '★';
+      }
+
       const favFilter = document.getElementById('show-fav-filter');
+      this.setAttribute('aria-pressed', !isPressed);
       if(favFilter.checked) {
         updateRestaurants();
       }
     }
   });
-  this.setAttribute('aria-pressed', !isPressed);
 }
 
 /**
@@ -287,3 +302,19 @@ const addMarkersToMap = (restaurants = self.restaurants) => {
     self.markers.push(marker);
   });
 }
+
+/**
+ * Show offline alert when a request is attempted while offline.
+ */
+const showOfflineAlert = (msg = "You are offline. Try again later.") => {
+  const offlineAlert = document.querySelector('#offline-alert');
+  offlineAlert.innerHTML = msg;
+  offlineAlert.setAttribute('role', 'alert');
+  offlineAlert.className = 'showing';
+
+  // hide alert after 5 seconds
+  setTimeout(() => {
+    offlineAlert.removeAttribute('role');
+    offlineAlert.className = '';
+  }, 5000);
+};

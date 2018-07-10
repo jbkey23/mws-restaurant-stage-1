@@ -9,7 +9,16 @@ let focusedElementBeforeModal;
  */
 document.addEventListener('DOMContentLoaded', (event) => {  
   initMap();
+
+  if(navigator.onLine) {
+    DBHelper.clearRequestQueue();
+  }
 });
+
+/**
+ * Listen for online event and try making queued requests (if any)
+ */
+window.addEventListener('online', DBHelper.clearRequestQueue);
 
 const mapboxToken = 'pk.eyJ1IjoiamtleTIzIiwiYSI6ImNqaWJwZWRyNzA0dXgzcHIzODdkbjhseGsifQ.dhABWlTNS9eYEhtvdpFosQ';
 
@@ -270,4 +279,56 @@ const getParameterByName = (name, url) => {
   if (!results[2])
     return '';
   return decodeURIComponent(results[2].replace(/\+/g, ' '));
+};
+
+const form = document.getElementById('review-form');
+form.addEventListener('submit', submitReviewForm);
+
+/**
+ * Submit review form
+ */
+function submitReviewForm(event, restaurant_id = self.restaurant.id) {
+  event.preventDefault();
+
+  const formElements = form.elements;
+
+  const data = {
+    "restaurant_id": restaurant_id,
+    "name": formElements.name.value,
+    "rating": formElements.rating.value,
+    "comments": formElements.comments.value
+  };
+
+  DBHelper.postReview(data, (error) => {
+
+    if(error) {
+      if(error === 'OFFLINE') {
+        showOfflineAlert('You are offline. Your request will be processed once you are online again.');
+        closeModal({}, true);
+      }
+      else {
+        console.error(error);
+      }
+    }
+    else {
+      closeModal({}, true);
+      location.reload();
+    }
+  });
+}
+
+/**
+ * Show offline alert when a request is attempted while offline.
+ */
+const showOfflineAlert = (msg = "You are offline. Try again later.", shouldReturn = false) => {
+  const offlineAlert = document.querySelector('#offline-alert');
+  offlineAlert.textContent = msg;
+  offlineAlert.setAttribute('role', 'alert');
+  offlineAlert.className = 'showing';
+
+  // hide alert after 5 seconds
+  setTimeout(() => {
+    offlineAlert.removeAttribute('role');
+    offlineAlert.className = '';
+  }, 5000);
 };
