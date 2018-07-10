@@ -328,6 +328,8 @@ class DBHelper {
     let requestQueue = JSON.parse(localStorage.getItem('requestQueue')) || null;
 
     if(requestQueue && requestQueue.length > 0) {
+      
+      // from https://serviceworke.rs/request-deferrer_service-worker_doc.html
       let sent = requestQueue.reduce((prevRequest, requestData) => {
         return prevRequest.then(() => {
           return fetch(requestData.url, requestData.options);
